@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>For You 🎵</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink: #ffb5c8;
+    --pink-glow: rgba(255, 181, 200, 0.35);
+    --white: #fff;
+    --glass: rgba(255,255,255,0.07);
+    --glass-border: rgba(255,255,255,0.15);
+    --blur: blur(24px);
+    --font-display: 'Cormorant Garamond', serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0a0a0f;
+    font-family: var(--font-body);
+    color: var(--white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── AMBIENT BACKGROUND ── */
+  #ambient-bg {
+    position: fixed; inset: 0; z-index: 0;
+    filter: blur(80px) saturate(2.2) brightness(0.55);
+    transform: scale(1.3);
+    transition: background-image 1.2s ease;
+    background-size: cover; background-position: center;
+    background-image: linear-gradient(135deg, #1a0a20 0%, #0d1a2e 100%);
+  }
+  #ambient-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+  }
+
+  /* ── MAIN STAGE ── */
+  #stage {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── SONG SCREENS ── */
+  .song-screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    transform: translateX(100%);
+    transition: transform 0.7s cubic-bezier(0.77, 0, 0.18, 1);
+    will-change: transform;
+  }
+  .song-screen.active { transform: translateX(0); }
+  .song-screen.exit-left { transform: translateX(-100%); }
+
+  /* ── GLASS PLAYER SHELL ── */
+  .player-shell {
+    width: 100%;
+    max-width: 420px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    padding: 28px 24px 22px;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
+    display: flex; flex-direction: column; gap: 0;
+  }
+
+  /* ── SONG META ── */
+  .song-meta {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 22px;
+  }
+  .song-disc {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink) 0%, #c084fc 100%);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px var(--pink-glow);
+    animation: spin 8s linear infinite paused;
+  }
+  .song-disc.playing { animation-play-state: running; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .song-info { flex: 1; overflow: hidden; }
+  .song-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: #fff;
+  }
+  .song-artist { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .song-num { font-size: 0.7rem; color: var(--pink); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ── FRAME STAGE (lyric + image area) ── */
+  .frame-stage {
+    position: relative;
+    width: 100%;
+    min-height: 200px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* DESKTOP: side-by-side */
+  @media (min-width: 700px) {
+    .player-shell { max-width: 760px; }
+    .frame-stage { min-height: 260px; }
+  }
+
+  /* ── LYRIC FRAME ── */
+  .lyric-frame {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+  .lyric-frame.frame-active {
+    opacity: 1; pointer-events: auto;
+    animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .lyric-frame.frame-exit {
+    animation: pushBack 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+  }
+  @keyframes popIn {
+    0%   { opacity: 0; transform: scale(0.75) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes pushBack {
+    0%   { opacity: 1; transform: scale(1); filter: blur(0px); }
+    100% { opacity: 0; transform: scale(1.12); filter: blur(12px); }
+  }
+
+  .frame-image {
+    width: 160px; height: 160px;
+    border-radius: 18px;
+    object-fit: cover;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  @media (min-width: 700px) {
+    .lyric-frame { flex-direction: row; gap: 32px; }
+    .lyric-frame.frame-flip { flex-direction: row-reverse; }
+    .frame-image { width: 200px; height: 200px; }
+  }
+
+  .frame-text {
+    flex: 1;
+    text-align: center;
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 0;
+  }
+  @media (min-width: 700px) {
+    .frame-text { text-align: left; }
+  }
+
+  .lyric-line {
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 4.5vw, 2rem);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.3;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: 0.01em;
+  }
+  .lyric-word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    margin-right: 0.25em;
+  }
+  .lyric-word.revealed {
+    opacity: 1; transform: translateY(0);
+  }
+
+  /* ── PLACEHOLDER (before play) ── */
+  .idle-art {
+    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 20px 0;
+  }
+  .idle-waveform {
+    display: flex; align-items: flex-end; gap: 5px; height: 44px;
+  }
+  .idle-waveform span {
+    width: 4px; border-radius: 2px;
+    background: linear-gradient(to top, var(--pink), #c084fc);
+    opacity: 0.6;
+    animation: wave 1.2s ease-in-out infinite;
+  }
+  .idle-waveform span:nth-child(1) { height: 18px; animation-delay: 0s; }
+  .idle-waveform span:nth-child(2) { height: 32px; animation-delay: 0.1s; }
+  .idle-waveform span:nth-child(3) { height: 44px; animation-delay: 0.2s; }
+  .idle-waveform span:nth-child(4) { height: 28px; animation-delay: 0.3s; }
+  .idle-waveform span:nth-child(5) { height: 38px; animation-delay: 0.15s; }
+  .idle-waveform span:nth-child(6) { height: 20px; animation-delay: 0.25s; }
+  .idle-waveform span:nth-child(7) { height: 36px; animation-delay: 0.05s; }
+  @keyframes wave {
+    0%,100% { transform: scaleY(0.5); opacity: 0.4; }
+    50%      { transform: scaleY(1);   opacity: 0.9; }
+  }
+  .idle-hint {
+    font-size: 0.72rem; letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35); text-transform: uppercase;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .time-label { font-size: 0.7rem; color: rgba(255,255,255,0.4); min-width: 32px; font-variant-numeric: tabular-nums; }
+  .progress-track {
+    flex: 1; height: 3px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--pink), #c084fc);
+    width: 0%;
+    transition: width 0.3s linear;
+    box-shadow: 0 0 8px var(--pink-glow);
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+  }
+  .btn {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s, transform 0.15s;
+    padding: 6px;
+    border-radius: 50%;
+  }
+  .btn:hover { color: #fff; transform: scale(1.1); }
+  .btn:active { transform: scale(0.94); }
+  .btn-play {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--pink) 0%, #c084fc 100%);
+    border-radius: 50%;
+    color: #fff;
+    box-shadow: 0 0 24px var(--pink-glow), 0 0 50px rgba(192,132,252,0.2);
+    transition: all 0.2s;
+  }
+  .btn-play:hover { transform: scale(1.08); box-shadow: 0 0 36px var(--pink-glow), 0 0 70px rgba(192,132,252,0.3); }
+  .btn-next {
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-family: var(--font-body);
+    transition: all 0.3s;
+  }
+  .btn-next.glowing {
+    color: var(--pink);
+    border-color: var(--pink);
+    box-shadow: 0 0 18px var(--pink-glow);
+    animation: pulse-next 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-next {
+    0%,100% { box-shadow: 0 0 10px var(--pink-glow); }
+    50%      { box-shadow: 0 0 28px var(--pink-glow), 0 0 50px rgba(255,181,200,0.15); }
+  }
+
+  /* ── FINALE SCREEN ── */
+  #screen-4 .player-shell {
+    max-width: 480px;
+    gap: 0;
+  }
+  @media (min-width: 700px) {
+    #screen-4 .player-shell { max-width: 680px; }
+  }
+
+  .finale-marquee-wrap {
+    overflow: hidden;
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 14px;
+    position: relative;
+  }
+  .finale-marquee-wrap::before,
+  .finale-marquee-wrap::after {
+    content: '';
+    position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2;
+    pointer-events: none;
+  }
+  .finale-marquee-wrap::before { left: 0; background: linear-gradient(to right, rgba(10,10,15,0.8), transparent); }
+  .finale-marquee-wrap::after { right: 0; background: linear-gradient(to left, rgba(10,10,15,0.8), transparent); }
+
+  .finale-marquee {
+    display: flex;
+    gap: 14px;
+    animation: marquee 22s linear infinite;
+    width: max-content;
+  }
+  .finale-marquee.paused { animation-play-state: paused; }
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .finale-photo {
+    width: 110px; height: 110px;
+    border-radius: 14px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    transition: transform 0.3s;
+  }
+  .finale-photo:hover { transform: scale(1.06); }
+
+  .poem-block {
+    text-align: center;
+    padding: 6px 8px 4px;
+  }
+  .poem-label {
+    font-size: 0.62rem; letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.3); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .poem-stanza {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 2.8vw, 1.2rem);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 16px;
+  }
+  .poem-stanza:last-of-type { margin-bottom: 0; }
+  .poem-stanza em { color: var(--pink); font-style: normal; }
+
+  /* ── TOAST NOTIFICATION ── */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 0.78rem; color: rgba(255,255,255,0.75);
+    opacity: 0; pointer-events: none;
+    transition: all 0.4s ease;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── INITIAL LANDING ── */
+  #landing {
+    position: fixed; inset: 0; z-index: 50;
+    background: #0a0a0f;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  #landing.fade-out {
+    opacity: 0; transform: scale(1.05); pointer-events: none;
+  }
+  .landing-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 12vw, 6rem);
+    font-weight: 300; font-style: italic;
+    color: #fff;
+    line-height: 1;
+    text-align: center;
+    animation: fadeSlide 1.2s ease forwards;
+  }
+  .landing-sub {
+    font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-top: 16px; margin-bottom: 48px;
+    animation: fadeSlide 1.2s 0.3s ease forwards; opacity: 0;
+  }
+  .landing-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.8);
+    padding: 14px 40px;
+    border-radius: 40px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    animation: fadeSlide 1.2s 0.6s ease forwards; opacity: 0;
+  }
+  .landing-btn:hover {
+    background: rgba(255,181,200,0.1);
+    border-color: var(--pink);
+    color: var(--pink);
+    box-shadow: 0 0 30px var(--pink-glow);
+  }
+  @keyframes fadeSlide {
+    0%   { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── STARS DECORATION ── */
+  .stars {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: #fff;
+    animation: twinkle var(--dur) ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: var(--op); transform: scale(1); }
+    50%      { opacity: calc(var(--op) * 0.2); transform: scale(0.6); }
+  }
+
+  /* ── POLAROID BACKGROUND ── */
+  #polaroid-bg {
+    position: fixed; inset: -20%; z-index: 0;
+    pointer-events: none;
+    transform: rotate(-45deg);
+    transform-origin: center center;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  #polaroid-bg.visible { opacity: 1; }
+
+  .polaroid-row {
+    display: flex;
+    gap: 18px;
+    flex-shrink: 0;
+    width: max-content;
+  }
+  /* odd rows: slide bottom-to-top (translateY negative) */
+  .polaroid-row.row-up {
+    animation: slideUp var(--spd, 28s) linear infinite;
+  }
+  /* even rows: slide top-to-bottom (translateY positive) */
+  .polaroid-row.row-down {
+    animation: slideDown var(--spd, 32s) linear infinite;
+  }
+  @keyframes slideUp {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes slideDown {
+    0%   { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .polaroid-card {
+    flex-shrink: 0;
+    width: 100px;
+    background: #fff;
+    padding: 7px 7px 22px 7px;
+    border-radius: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+    transform: rotate(var(--tilt, 0deg));
+    opacity: 0.22;
+  }
+  .polaroid-card img {
+    width: 100%; height: 86px;
+    object-fit: cover;
+    display: block;
+  }
+
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Polaroid sliding background -->
+<div id="polaroid-bg"></div>
+
+<!-- Ambient BG -->
+<div id="ambient-bg"></div>
+
+<!-- Landing Screen -->
+<div id="landing">
+  <h1 class="landing-title">Happy<br>Birthday.</h1>
+  <p class="landing-sub">A little something for you</p>
+  <button class="landing-btn" onclick="startExperience()">Open Your Gift ✦</button>
+</div>
+
+<!-- Main Stage -->
+<div id="stage">
+
+  <!-- ── SONG 1: Rakhlo Tum Chupaake ── -->
+  <div class="song-screen" id="screen-0">
+    <div class="player-shell">
+      <div class="song-meta">
+        <div class="song-disc" id="disc-0">🌸</div>
+        <div class="song-info">
+          <div class="song-num">01 / 05</div>
+          <div class="song-title">Rakhlo Tum Chupaake</div>
+          <div class="song-artist">Arpit Bala</div>
+        </div>
+      </div>
+
+      <div class="frame-stage" id="frames-0">
+        <div class="idle-art" id="idle-0">
+          <div class="idle-waveform">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="idle-hint">Press play to begin</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <span class="time-label" id="time-0">0:00</span>
+        <div class="progress-track"><div class="progress-fill" id="prog-0"></div></div>
+        <span class="time-label" id="dur-0">1:20</span>
+      </div>
+      <div class="controls">
+        <button class="btn btn-play" id="play-0" onclick="togglePlay(0)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn btn-next" id="next-0" onclick="nextSong(0)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SONG 2: Moonlight ── -->
+  <div class="song-screen" id="screen-1">
+    <div class="player-shell">
+      <div class="song-meta">
+        <div class="song-disc" id="disc-1">🌙</div>
+        <div class="song-info">
+          <div class="song-num">02 / 05</div>
+          <div class="song-title">Moonlight</div>
+          <div class="song-artist">Harnoor</div>
+        </div>
+      </div>
+      <div class="frame-stage" id="frames-1">
+        <div class="idle-art" id="idle-1">
+          <div class="idle-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="idle-hint">Press play</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <span class="time-label" id="time-1">0:00</span>
+        <div class="progress-track"><div class="progress-fill" id="prog-1"></div></div>
+        <span class="time-label" id="dur-1">0:19</span>
+      </div>
+      <div class="controls">
+        <button class="btn btn-play" id="play-1" onclick="togglePlay(1)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn btn-next" id="next-1" onclick="nextSong(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SONG 3: Careless Whisper ── -->
+  <div class="song-screen" id="screen-2">
+    <div class="player-shell">
+      <div class="song-meta">
+        <div class="song-disc" id="disc-2">🎷</div>
+        <div class="song-info">
+          <div class="song-num">03 / 05</div>
+          <div class="song-title">Careless Whisper</div>
+          <div class="song-artist">George Michael</div>
+        </div>
+      </div>
+      <div class="frame-stage" id="frames-2">
+        <div class="idle-art" id="idle-2">
+          <div class="idle-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="idle-hint">Press play</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <span class="time-label" id="time-2">0:00</span>
+        <div class="progress-track"><div class="progress-fill" id="prog-2"></div></div>
+        <span class="time-label" id="dur-2">0:31</span>
+      </div>
+      <div class="controls">
+        <button class="btn btn-play" id="play-2" onclick="togglePlay(2)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn btn-next" id="next-2" onclick="nextSong(2)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SONG 4: About You ── -->
+  <div class="song-screen" id="screen-3">
+    <div class="player-shell">
+      <div class="song-meta">
+        <div class="song-disc" id="disc-3">💫</div>
+        <div class="song-info">
+          <div class="song-num">04 / 05</div>
+          <div class="song-title">About You</div>
+          <div class="song-artist">The 1975</div>
+        </div>
+      </div>
+      <div class="frame-stage" id="frames-3">
+        <div class="idle-art" id="idle-3">
+          <div class="idle-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="idle-hint">Press play</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <span class="time-label" id="time-3">0:00</span>
+        <div class="progress-track"><div class="progress-fill" id="prog-3"></div></div>
+        <span class="time-label" id="dur-3">0:24</span>
+      </div>
+      <div class="controls">
+        <button class="btn btn-play" id="play-3" onclick="togglePlay(3)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn btn-next" id="next-3" onclick="nextSong(3)">Finale →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SONG 5: Finale ── -->
+  <div class="song-screen" id="screen-4">
+    <div class="player-shell">
+      <div class="song-meta">
+        <div class="song-disc" id="disc-4">✨</div>
+        <div class="song-info">
+          <div class="song-num">05 / 05 · Finale</div>
+          <div class="song-title">M.</div>
+          <div class="song-artist">Anil Emre Daldal</div>
+        </div>
+      </div>
+
+      <!-- Marquee photos -->
+      <div class="finale-marquee-wrap" style="margin-bottom:18px;">
+        <div class="finale-marquee" id="finale-marquee">
+          <!-- Duplicated for seamless loop — replace src with real photos -->
+          <img class="finale-photo" src="https://picsum.photos/seed/a1/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a2/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a3/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a4/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a5/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a6/220/220" alt="">
+          <!-- Duplicate set for seamless -->
+          <img class="finale-photo" src="https://picsum.photos/seed/a1/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a2/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a3/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a4/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a5/220/220" alt="">
+          <img class="finale-photo" src="https://picsum.photos/seed/a6/220/220" alt="">
+        </div>
+      </div>
+
+      <!-- Poem -->
+      <div class="poem-block">
+        <div class="poem-label">For you, always</div>
+        <div class="poem-stanza">
+          You're the song that plays in the background<br>
+          of every memory I love the most —<br>
+          <em>laughing too loud,</em> staying too late,<br>
+          being exactly who you are.
+        </div>
+        <div class="poem-stanza">
+          So here's to another year of you:<br>
+          a little chaotic, <em>wonderfully real,</em><br>
+          the kind of person who makes<br>
+          everywhere feel like home.
+        </div>
+      </div>
+
+      <div class="progress-wrap" style="margin-top:16px;">
+        <span class="time-label" id="time-4">0:00</span>
+        <div class="progress-track"><div class="progress-fill" id="prog-4"></div></div>
+        <span class="time-label" id="dur-4">3:33</span>
+      </div>
+      <div class="controls">
+        <button class="btn btn-play" id="play-4" onclick="togglePlay(4)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn btn-next" id="next-4" onclick="restartExperience()" style="border-color:rgba(255,255,255,0.15);">↺ Replay</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end stage -->
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA — Edit this section with real content
+// ─────────────────────────────────────────
+
+// Replace these placeholder image URLs with your actual photo URLs.
+// Each frame has: image, lyric words array, and timing in seconds
+// "times" = when each WORD in the lyric line gets revealed (relative to song start)
+
+const SONGS = [
+  {
+    // ── Song 1: Rakhlo Tum Chupaake — cropped 0:27–1:47 (80s)
+    id: 0,
+    audioSrc: 'song1.mp3',
+    duration: 80,
+    bgColor: '#1a0a20',
+    frames: [
+      {
+        img: 'https://picsum.photos/seed/s1f1/400/400',
+        // CHORUS — line 1+2 (0:27 of original = 0s, vocals at ~6s)
+        words: ['Rakh', 'lo', 'tum', 'chhupa', 'ke', 'phir,'],
+        times: [6.0, 6.5, 7.0, 7.5, 8.0, 8.4],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f2/400/400',
+        // CHORUS — line 2
+        words: ['Khat', 'likh', 'ke', 'hi', 'kehna,'],
+        times: [9.5, 10.0, 10.5, 11.0, 11.5],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f3/400/400',
+        // CHORUS — line 3
+        words: ['Simti', 'si', 'likhaai', 'mein', 'hi', 'bharna', 'apna', 'gham'],
+        times: [13.5, 14.0, 15.0, 15.4, 15.8, 16.1, 16.5, 17.9],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f4/400/400',
+        // POST-CHORUS — "rakhti ho chhupa ke, bator lo kahin pe jod do"
+        words: ['Rakhti', 'ho', 'chhupa', 'ke,', 'bator', 'lo', 'kahin', 'pe', 'jod', 'do'],
+        times: [20.0, 20.5, 21.0, 21.5, 22.5, 23.0, 23.5, 24.3, 25.7, 26.7],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f5/400/400',
+        // POST-CHORUS — "lifafe mein saja ke humein aisi yun saza do"
+        words: ['Lifafe', 'mein', 'saja', 'ke,', 'humein', 'aisi', 'yun', 'saza', 'do'],
+        times: [27.4, 27.9, 28.4, 28.8, 30.3, 30.8, 31.8, 32.4, 33.3],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f6/400/400',
+        // POST-CHORUS — "ki hum padh ke jaan galti, aur galti kal se na ho"
+        words: ['Ki', 'hum', 'padh', 'ke', 'jaan', 'galti,', 'aur', 'galti', 'kal', 'se', 'na', 'ho'],
+        times: [34.0, 34.4, 35.3, 35.6, 35.8, 36.1, 37.4, 38.5, 38.9, 39.3, 40.7, 41.1],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f7/400/400',
+        // POST-CHORUS — "humein aisi ek saza do ki hum jaanen saari doori"
+        words: ['Humein', 'aisi', 'ek', 'saza', 'do,', 'ki', 'hum', 'jaanen', 'saari', 'doori'],
+        times: [43.2, 43.7, 44.6, 45.1, 45.6, 46.1, 46.6, 47.1, 47.6, 48.1],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f8/400/400',
+        // VERSE — "humse jo rooth gayi ho, rahti chup ho ke poore din"
+        words: ['Humse', 'jo', 'rooth', 'gayi', 'ho,', 'rahti', 'chup', 'hoke', 'poore', 'din'],
+        times: [49.2, 49.5, 50.0, 50.5, 51.0, 51.6, 52.7, 54.6, 55.3, 55.4],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f9/400/400',
+        // VERSE — "tum likh lo jaise kathghare mein, hum khat padh lenge shauk se"
+        words: ['Tum', 'likh', 'lo', 'jaise', 'kathghare', 'mein,', 'hum', 'khat', 'padh', 'lenge', 'shauk', 'se'],
+        times: [56.1, 56.7, 57.3, 57.8, 58.4, 59.0, 59.8, 60.3, 61.4, 62.3, 63.1, 63.7],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f10/400/400',
+        // VERSE — "isi ek pal ke bahaane, phir hum galti se paas aayenge"
+        words: ['Isi', 'ek', 'pal', 'ke', 'bahaane,', 'phir', 'hum', 'galti', 'se', 'paas', 'aayenge'],
+        times: [64.3, 64.8, 65.3, 65.8, 66.3, 67.8, 68.3, 68.8, 69.3, 69.8, 70.3],
+      },
+      {
+        img: 'https://picsum.photos/seed/s1f11/400/400',
+        // VERSE OUTRO — "teri kehne ki thi galti, aur uska kya hi kehna"
+        words: ['Teri', 'kehne', 'ki', 'thi', 'galti,', 'aur', 'uska', 'kya', 'hi', 'kehna'],
+        times: [71.2, 71.5, 71.8, 72.1, 72.4, 72.7, 73.0, 73.3, 73.6, 74.0],
+      },
+    ]
+  },
+  {
+    // ── Song 2: Moonlight — Harnoor — re-cropped 0:13–0:45 of original (32s)
+    // Now starts exactly when music hits (0:13 of original = 0s of clip)
+    id: 1,
+    audioSrc: 'song2.mp3',
+    duration: 19,
+    bgColor: '#050b18',
+    frames: [
+      {
+        img: 'https://picsum.photos/seed/s2f1/400/400',
+        // Beat + vocals hit immediately at 0s
+        words: ['Ni', 'moonlight', 'de', 'olhe', 'baith', 'ke'],
+        times: [0.8, 1.2, 1.5, 1.9, 2.4, 2.9],
+      },
+      {
+        img: 'https://picsum.photos/seed/s2f2/400/400',
+        // "Goriyan baahan de paye jaal sohniye"
+        words: ['Goriyan', 'baahan', 'de', 'paye', 'jaal', 'sohniye'],
+        times: [4.3, 4.9, 5.4, 5.9, 6.4, 7.0],
+      },
+      {
+        img: 'https://picsum.photos/seed/s2f3/400/400',
+        // "Tu sangdi rahve main hath fadla" — actually sung at ~13.5s (not 9.5s)
+        words: ['Tu', 'sangdi', 'rahve', 'main', 'hath', 'fadla'],
+        times: [7.8, 8.3, 8.7, 9.2, 10.2, 10.9],
+      },
+      {
+        img: 'https://picsum.photos/seed/s2f4/400/400',
+        // "Ankhan utte aaye hone baal sohniye" — shift forward accordingly
+        words: ['Ankhan', 'utte', 'aaye', 'hone', 'vaal', 'sohniye'],
+        times: [11.6, 11.9, 12.3, 12.8, 13.3, 13.8],
+      },
+      {
+        img: 'https://picsum.photos/seed/s2f5/400/400',
+        // "Ankhan utte aaye hone baal sohniye" — shift forward accordingly
+        words: ['Ankhan', 'utte', 'aaye', 'hone', 'vaal', 'sohniye'],
+        times: [14.5, 15.1, 15.9, 16.3, 16.9, 17.5, 18.0],
+      },
+    ]
+  },
+  {
+    // ── Song 3: Careless Whisper — re-cropped 2:40–3:11 of original (31s)
+    // This is the BRIDGE: "Tonight the music seems so loud..."
+    // Vocals start at ~5s into clip (2:45 of original as user said)
+    id: 2,
+    audioSrc: 'song3.mp3',
+    duration: 30.8,
+    bgColor: '#160d18',
+    frames: [
+      {
+        img: 'https://picsum.photos/seed/s3f1/400/400',
+        // "Tonight the music seems so loud" — vocals at ~5s
+        words: ['Tonight,', 'the', 'music', 'seems', 'so', 'loud...'],
+        times: [5.0, 5.5, 6.0, 6.5, 7.0, 7.5],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f2/400/400',
+        // "I wish that we could lose this crowd"
+        words: ['I', 'wish', 'that', 'we', 'could', 'lose', 'this', 'crowd'],
+        times: [8.2, 8.7, 9.2, 9.7, 10.0, 10.3, 10.7, 11.1],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f3/400/400',
+        // "Maybe it's better this way"
+        words: ['Maybe', 'it\'s', 'better', 'this', 'way...'],
+        times: [11.7, 12.3, 12.9, 13.5, 13.7],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f4/400/400',
+        // "We could have been so good together"
+        words: ['We', 'hurt', 'each other', 'with', 'the', 'things', 'we', 'want', 'to', 'say'],
+        times: [14.8, 15.2, 15.6, 15.8, 15.9, 16.2, 16.4, 16.6, 16.8, 17.0],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f4/400/400',
+        // "We could have been so good together"
+        words: ['We', 'could', 'have', 'been', 'so', 'good', 'together,'],
+        times: [17.8, 18.3, 18.8, 19.3, 19.7, 20.1, 20.1],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f5/400/400',
+        // "I\'ll never dance again, guilty feet have got no rhythm"
+        words: ['We', 'could', 'have', 'lived,', 'this', 'dance', 'forever'],
+        times: [20.9, 21.3, 21.8, 22.3, 22.8, 23.3, 23.8],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f6/400/400',
+        // "I\'ll never dance again, guilty feet have got no rhythm"
+        words: ['But', 'now', 'who\'s', 'gonna,', 'dance', 'with', 'me', '?'],
+        times: [24.5, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0],
+      },
+      {
+        img: 'https://picsum.photos/seed/s3f7/400/400',
+        // "I\'ll never dance again, guilty feet have got no rhythm"
+        words: ['Pleaseee,', ' STAY'],
+        times: [28.8, 29.3],
+      }
+    ]
+  },
+  {
+    // ── Song 4: About You — The 1975 — re-cropped 3:04–3:28 (24s)
+    // All times shifted -1s from previous version to fix lag
+    id: 3,
+    audioSrc: 'song4.mp3',
+    duration: 24,
+    bgColor: '#06100a',
+    frames: [
+      {
+        img: 'https://picsum.photos/seed/s4f1/400/400',
+        words: ['And', 'there', 'was', 'something', 'about', 'you'],
+        times: [0.0, 0.5, 1.0, 1.6, 2.3, 2.9],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f2/400/400',
+        words: ['that', 'now', 'I', 'can\'t', 'remember...'],
+        times: [3.5, 4.0, 4.5, 5.0, 5.7],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f3/400/400',
+        words: ['It\'s', 'the', 'same', 'damn', 'thing', 'that', 'made', 'my', 'heart', 'surrender'],
+        times: [6.5, 6.9, 7.3, 7.7, 8.1, 8.5, 8.9, 9.3, 9.8, 10.4],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f4/400/400',
+        words: ['I\'ll', 'miss', 'you', 'on', 'a', 'train,'],
+        times: [11.0, 11.5, 11.9, 12.3, 12.6, 13.0],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f5/400/400',
+        words: ['I\'ll', 'miss', 'you', 'in', 'the', 'morning...'],
+        times: [13.7, 13.9, 14.3, 14.7, 15.1, 15.4],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f6/400/400',
+        words: ['I', 'never', 'know', 'what', 'to', 'think', 'about'],
+        times: [16.2, 16.7, 17.2, 17.8, 18.3, 18.9, 19.3],
+      },
+      {
+        img: 'https://picsum.photos/seed/s4f7/400/400',
+        words: ['I', 'think', 'about', 'youuuu <3',],
+        times: [20.0, 20.5, 21.0, 21.5],
+      },
+    ]
+  }
+];
+
+// ─────────────────────────────────────────
+// ENGINE
+// ─────────────────────────────────────────
+
+let currentSong = 0;
+let audio = null;
+let isPlaying = false;
+let frameTimers = [];
+let wordTimers = [];
+let progressRaf = null;
+let currentFrameIdx = -1;
+let usedAudioContext = false;
+const ambientBg = document.getElementById('ambient-bg');
+
+// ── Stars
+(function spawnStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 0.5;
+    const op = Math.random() * 0.4 + 0.05;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --op:${op};
+      --dur:${(Math.random()*4+2).toFixed(1)}s;
+      animation-delay:${(Math.random()*5).toFixed(1)}s;
+    `;
+    container.appendChild(s);
+  }
+})();
+
+// ── Polaroid sliding background
+(function buildPolaroidBg() {
+  const bg = document.getElementById('polaroid-bg');
+
+  // Collect all frame images from SONGS data
+  const allImgs = [];
+  SONGS.forEach(song => song.frames && song.frames.forEach(f => allImgs.push(f.img)));
+  // Also add finale marquee images
+  const finaleImgs = [
+    'https://picsum.photos/seed/a1/220/220',
+    'https://picsum.photos/seed/a2/220/220',
+    'https://picsum.photos/seed/a3/220/220',
+    'https://picsum.photos/seed/a4/220/220',
+    'https://picsum.photos/seed/a5/220/220',
+    'https://picsum.photos/seed/a6/220/220',
+  ];
+  const imgPool = [...allImgs, ...finaleImgs];
+
+  const tilts = [-3, 2, -1.5, 3, -2, 1, -2.5, 2.5, -1, 1.5];
+  const NUM_ROWS = 6;
+  const CARDS_PER_ROW = 14;
+
+  for (let r = 0; r < NUM_ROWS; r++) {
+    const row = document.createElement('div');
+    row.className = `polaroid-row ${r % 2 === 0 ? 'row-up' : 'row-down'}`;
+    const speed = 26 + r * 5;
+    row.style.setProperty('--spd', speed + 's');
+    row.style.animationDelay = -(r * 3.5) + 's'; // stagger so rows look different on load
+
+    for (let c = 0; c < CARDS_PER_ROW * 2; c++) {
+      const card = document.createElement('div');
+      card.className = 'polaroid-card';
+      const tilt = tilts[(r * 3 + c) % tilts.length];
+      card.style.setProperty('--tilt', tilt + 'deg');
+
+      const img = document.createElement('img');
+      const imgIdx = (r * CARDS_PER_ROW + (c % CARDS_PER_ROW)) % imgPool.length;
+      img.src = imgPool[imgIdx];
+      img.alt = '';
+      img.loading = 'lazy';
+
+      card.appendChild(img);
+      row.appendChild(card);
+    }
+    bg.appendChild(row);
+  }
+})();
+
+function showPolaroids() {
+  document.getElementById('polaroid-bg').classList.add('visible');
+}
+
+function hidePolaroids() {
+  document.getElementById('polaroid-bg').classList.remove('visible');
+}
+
+function startExperience() {
+  document.getElementById('landing').classList.add('fade-out');
+  setTimeout(() => {
+    document.getElementById('landing').style.display = 'none';
+    showPolaroids();
+    showSong(0);
+  }, 900);
+}
+
+function showSong(idx) {
+  // Hide all
+  document.querySelectorAll('.song-screen').forEach((s, i) => {
+    s.classList.remove('active','exit-left');
+    if (i !== idx) s.style.pointerEvents = 'none';
+  });
+  currentSong = idx;
+  const screen = document.getElementById(`screen-${idx}`);
+  screen.classList.add('active');
+  screen.style.pointerEvents = '';
+
+  // Update ambient bg
+  setAmbientBg(idx < 4 ? SONGS[idx].bgColor : '#0a0a0f');
+
+  // Finale special handling
+  if (idx === 4) {
+    const marquee = document.getElementById('finale-marquee');
+    marquee.classList.add('paused');
+  }
+}
+
+function nextSong(fromIdx) {
+  if (fromIdx < currentSong) return; // stale click
+  stopCurrentAudio();
+  const from = document.getElementById(`screen-${fromIdx}`);
+  from.classList.add('exit-left');
+  from.style.pointerEvents = 'none';
+  setTimeout(() => {
+    const toIdx = fromIdx + 1;
+    showSong(toIdx);
+    // Auto-play finale
+    if (toIdx === 4) {
+      setTimeout(() => togglePlay(4), 400);
+    }
+  }, 750);
+}
+
+function restartExperience() {
+  stopCurrentAudio();
+  document.querySelectorAll('.song-screen').forEach(s => {
+    s.classList.remove('active','exit-left');
+    s.style.transform = '';
+    s.style.pointerEvents = 'none';
+  });
+  // Reset frame stages
+  SONGS.forEach((_, i) => {
+    const fs = document.getElementById(`frames-${i}`);
+    const idle = document.getElementById(`idle-${i}`);
+    fs.innerHTML = '';
+    fs.appendChild(idle);
+    idle.style.display = '';
+    currentFrameIdx = -1;
+  });
+  // Reset progress
+  for (let i = 0; i < 5; i++) {
+    const pf = document.getElementById(`prog-${i}`);
+    if (pf) pf.style.width = '0%';
+    const ti = document.getElementById(`time-${i}`);
+    if (ti) ti.textContent = '0:00';
+    const disc = document.getElementById(`disc-${i}`);
+    if (disc) disc.classList.remove('playing');
+    const pb = document.getElementById(`play-${i}`);
+    if (pb) setPlayIcon(pb, false);
+    const nb = document.getElementById(`next-${i}`);
+    if (nb) nb.classList.remove('glowing');
+  }
+  showPolaroids();
+  showSong(0);
+}
+
+// ── Audio
+function togglePlay(idx) {
+  if (idx !== currentSong) return;
+
+  if (idx === 4) {
+    // Finale
+    const marquee = document.getElementById('finale-marquee');
+    if (isPlaying) {
+      isPlaying = false;
+      if (audio) audio.pause();
+      marquee.classList.add('paused');
+      setPlayIcon(document.getElementById(`play-4`), false);
+      document.getElementById(`disc-4`).classList.remove('playing');
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+    } else {
+      isPlaying = true;
+      marquee.classList.remove('paused');
+      if (!audio) {
+        audio = new Audio('song5.mp3');
+        audio.addEventListener('ended', () => {
+          isPlaying = false;
+          setPlayIcon(document.getElementById('play-4'), false);
+          document.getElementById('disc-4').classList.remove('playing');
+        });
+      }
+      audio.play().catch(() => showToast('Tap again to play music 🎵'));
+      setPlayIcon(document.getElementById(`play-4`), true);
+      document.getElementById(`disc-4`).classList.add('playing');
+      startFinaleProgress();
+    }
+    return;
+  }
+
+  const song = SONGS[idx];
+  if (!audio && song.audioSrc) {
+    audio = new Audio(song.audioSrc);
+    audio.addEventListener('ended', () => onSongEnd(idx));
+  }
+
+  if (isPlaying) {
+    // Pause
+    if (audio) audio.pause();
+    isPlaying = false;
+    setPlayIcon(document.getElementById(`play-${idx}`), false);
+    document.getElementById(`disc-${idx}`).classList.remove('playing');
+    if (progressRaf) cancelAnimationFrame(progressRaf);
+    clearAllTimers();
+  } else {
+    // Play
+    isPlaying = true;
+    setPlayIcon(document.getElementById(`play-${idx}`), true);
+    document.getElementById(`disc-${idx}`).classList.add('playing');
+    document.getElementById(`idle-${idx}`) && (document.getElementById(`idle-${idx}`).style.display = 'none');
+
+    if (audio) {
+      audio.play().catch(() => showToast('Tap again to play audio 🎵'));
+    } else {
+      showToast('Add audio files to hear music 🎵');
+    }
+
+    scheduleFrames(idx);
+    startProgressLoop(idx);
+  }
+}
+
+function stopCurrentAudio() {
+  isPlaying = false;
+  if (audio) { audio.pause(); audio.currentTime = 0; audio = null; }
+  clearAllTimers();
+  if (progressRaf) cancelAnimationFrame(progressRaf);
+  document.querySelectorAll('.song-disc').forEach(d => d.classList.remove('playing'));
+}
+
+function setPlayIcon(btn, playing) {
+  if (playing) {
+    btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+  } else {
+    btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  }
+}
+
+// ── Frame scheduling
+let clockStart = null;
+let clockOffset = 0;
+
+// ANIM_LEAD: how many ms BEFORE the lyric we trigger the pop-in,
+// so the spring animation has landed by the time the word is sung.
+const ANIM_LEAD = 450;
+
+function scheduleFrames(idx) {
+  clearAllTimers();
+  clockStart = performance.now();
+  clockOffset = audio ? audio.currentTime : 0;
+  currentFrameIdx = -1;
+
+  const song = SONGS[idx];
+  song.frames.forEach((frame, fi) => {
+    const triggerTime = frame.times[0]; // lyric start time (exact)
+    // Fire the image pop ANIM_LEAD ms early so it's fully popped when word hits
+    const delay = Math.max(0, (triggerTime - clockOffset) * 1000 - ANIM_LEAD);
+    const t = setTimeout(() => triggerFrame(idx, fi), delay);
+    frameTimers.push(t);
+  });
+}
+
+function triggerFrame(songIdx, frameIdx) {
+  if (!isPlaying || currentSong !== songIdx) return;
+  const song = SONGS[songIdx];
+  const frame = song.frames[frameIdx];
+  const framesContainer = document.getElementById(`frames-${songIdx}`);
+
+  // Exit old frame
+  const oldFrame = framesContainer.querySelector('.lyric-frame.frame-active');
+  if (oldFrame) {
+    oldFrame.classList.remove('frame-active');
+    oldFrame.classList.add('frame-exit');
+    setTimeout(() => oldFrame.remove(), 180);
+  }
+
+  // Update ambient bg
+  setAmbientBg(null, frame.img);
+
+  // Build new frame
+  const div = document.createElement('div');
+  div.className = 'lyric-frame';
+  if (frameIdx % 2 === 1) div.classList.add('frame-flip');
+
+  const img = document.createElement('img');
+  img.className = 'frame-image';
+  img.src = frame.img;
+  img.alt = '';
+
+  const textDiv = document.createElement('div');
+  textDiv.className = 'frame-text';
+
+  const lyricLine = document.createElement('div');
+  lyricLine.className = 'lyric-line';
+
+  frame.words.forEach((word, wi) => {
+    const span = document.createElement('span');
+    span.className = 'lyric-word';
+    span.textContent = word;
+    lyricLine.appendChild(span);
+  });
+
+  textDiv.appendChild(lyricLine);
+  div.appendChild(img);
+  div.appendChild(textDiv);
+  framesContainer.appendChild(div);
+
+  // Activate with spring
+  requestAnimationFrame(() => div.classList.add('frame-active'));
+
+  // Schedule word reveals
+  const now = audio ? audio.currentTime : (performance.now() - clockStart) / 1000 + clockOffset;
+  frame.words.forEach((_, wi) => {
+    const wordTime = frame.times[wi];
+    const delay = Math.max(0, (wordTime - now) * 1000);
+    const t = setTimeout(() => {
+      const spans = lyricLine.querySelectorAll('.lyric-word');
+      if (spans[wi]) spans[wi].classList.add('revealed');
+    }, delay);
+    wordTimers.push(t);
+  });
+
+  currentFrameIdx = frameIdx;
+}
+
+function clearAllTimers() {
+  frameTimers.forEach(clearTimeout);
+  wordTimers.forEach(clearTimeout);
+  frameTimers = []; wordTimers = [];
+}
+
+// ── Progress bar
+function startProgressLoop(idx) {
+  if (progressRaf) cancelAnimationFrame(progressRaf);
+  const song = SONGS[idx];
+  const startWall = performance.now();
+  const audioStart = audio ? audio.currentTime : 0;
+
+  function tick() {
+    if (!isPlaying || currentSong !== idx) return;
+    const elapsed = audioStart + (performance.now() - startWall) / 1000;
+    const pct = Math.min(100, (elapsed / song.duration) * 100);
+    const pf = document.getElementById(`prog-${idx}`);
+    if (pf) pf.style.width = pct + '%';
+    const ti = document.getElementById(`time-${idx}`);
+    if (ti) ti.textContent = formatTime(elapsed);
+
+    if (elapsed >= song.duration) {
+      onSongEnd(idx);
+      return;
+    }
+    progressRaf = requestAnimationFrame(tick);
+  }
+  progressRaf = requestAnimationFrame(tick);
+}
+
+function startFinaleProgress() {
+  if (progressRaf) cancelAnimationFrame(progressRaf);
+  const totalDur = 213.6;
+  function tick() {
+    if (!isPlaying || currentSong !== 4) return;
+    const elapsed = audio ? audio.currentTime : 0;
+    const pct = Math.min(100, (elapsed / totalDur) * 100);
+    const pf = document.getElementById('prog-4');
+    if (pf) pf.style.width = pct + '%';
+    const ti = document.getElementById('time-4');
+    if (ti) ti.textContent = formatTime(elapsed);
+    progressRaf = requestAnimationFrame(tick);
+  }
+  progressRaf = requestAnimationFrame(tick);
+}
+
+function onSongEnd(idx) {
+  isPlaying = false;
+  if (audio) { audio.pause(); }
+  setPlayIcon(document.getElementById(`play-${idx}`), false);
+  document.getElementById(`disc-${idx}`).classList.remove('playing');
+  const nb = document.getElementById(`next-${idx}`);
+  if (nb) nb.classList.add('glowing');
+  showToast('✦ Click Next to continue');
+}
+
+// ── Ambient BG
+let ambientImg = null;
+function setAmbientBg(color, imgUrl) {
+  if (imgUrl) {
+    ambientBg.style.backgroundImage = `url(${imgUrl})`;
+  } else if (color) {
+    // keep image but tint
+  }
+}
+
+// ── Utilities
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Init
+showSong(0);
+</script>
+</body>
+</html>
