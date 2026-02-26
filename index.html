@@ -14,15 +14,9 @@
     --white: #fff;
     --glass: rgba(255,255,255,0.07);
     --glass-border: rgba(255,255,255,0.15);
-    --blur: blur(16px); /* Reduced for mobile performance */
+    --blur: blur(24px);
     --font-display: 'Cormorant Garamond', serif;
     --font-body: 'DM Sans', sans-serif;
-  }
-
-  @media (min-width: 700px) {
-    :root {
-      --blur: blur(24px); /* Restored for desktop */
-    }
   }
 
   html, body {
@@ -37,19 +31,12 @@
   /* ── AMBIENT BACKGROUND ── */
   #ambient-bg {
     position: fixed; inset: 0; z-index: 0;
-    filter: blur(40px) saturate(2.2) brightness(0.55); /* Halved blur for mobile */
-    transform: scale(1.3) translateZ(0); /* translateZ forces GPU acceleration */
-    will-change: background-image;
+    filter: blur(80px) saturate(2.2) brightness(0.55);
+    transform: scale(1.3);
+    transition: background-image 1.2s ease;
     background-size: cover; background-position: center;
     background-image: linear-gradient(135deg, #1a0a20 0%, #0d1a2e 100%);
   }
-  @media (min-width: 700px) {
-    #ambient-bg {
-      filter: blur(80px) saturate(2.2) brightness(0.55);
-      transition: background-image 1.2s ease;
-    }
-  }
-  
   #ambient-bg::after {
     content: '';
     position: absolute; inset: 0;
@@ -88,7 +75,6 @@
     padding: 28px 24px 22px;
     box-shadow: 0 8px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
     display: flex; flex-direction: column; gap: 0;
-    transform: translateZ(0); /* Hardware accel for the glass */
   }
 
   /* ── SONG META ── */
@@ -104,7 +90,6 @@
     font-size: 22px;
     box-shadow: 0 0 20px var(--pink-glow);
     animation: spin 8s linear infinite paused;
-    will-change: transform;
   }
   .song-disc.playing { animation-play-state: running; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -142,8 +127,8 @@
     align-items: center;
     gap: 18px;
     opacity: 0;
+    transition: opacity 0.4s ease;
     pointer-events: none;
-    will-change: transform, opacity;
   }
   .lyric-frame.frame-active {
     opacity: 1; pointer-events: auto;
@@ -168,7 +153,6 @@
     object-fit: cover;
     box-shadow: 0 12px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1);
     flex-shrink: 0;
-    transform: translateZ(0);
   }
   @media (min-width: 700px) {
     .lyric-frame { flex-direction: row; gap: 32px; }
@@ -201,7 +185,6 @@
     transform: translateY(8px);
     transition: opacity 0.2s ease, transform 0.2s ease;
     margin-right: 0.25em;
-    will-change: transform, opacity;
   }
   .lyric-word.revealed {
     opacity: 1; transform: translateY(0);
@@ -220,7 +203,6 @@
     background: linear-gradient(to top, var(--pink), #c084fc);
     opacity: 0.6;
     animation: wave 1.2s ease-in-out infinite;
-    will-change: transform, opacity;
   }
   .idle-waveform span:nth-child(1) { height: 18px; animation-delay: 0s; }
   .idle-waveform span:nth-child(2) { height: 32px; animation-delay: 0.1s; }
@@ -238,7 +220,7 @@
     color: rgba(255,255,255,0.35); text-transform: uppercase;
   }
 
-  /* ── PROGRESS BAR (Optimized for GPU) ── */
+  /* ── PROGRESS BAR ── */
   .progress-wrap {
     display: flex; align-items: center; gap: 10px;
     margin-bottom: 16px;
@@ -250,15 +232,12 @@
     border-radius: 2px;
     cursor: pointer;
     position: relative;
-    overflow: hidden; /* Contains the scaling fill */
   }
   .progress-fill {
     height: 100%; border-radius: 2px;
     background: linear-gradient(90deg, var(--pink), #c084fc);
-    width: 100%; /* Changed from 0% */
-    transform-origin: left;
-    transform: scaleX(0); /* Using transform instead of width */
-    will-change: transform;
+    width: 0%;
+    transition: width 0.3s linear;
     box-shadow: 0 0 8px var(--pink-glow);
   }
 
@@ -320,7 +299,6 @@
     margin-bottom: 20px;
     border-radius: 14px;
     position: relative;
-    transform: translateZ(0);
   }
   .finale-marquee-wrap::before,
   .finale-marquee-wrap::after {
@@ -336,7 +314,6 @@
     gap: 14px;
     animation: marquee 22s linear infinite;
     width: max-content;
-    will-change: transform;
   }
   .finale-marquee.paused { animation-play-state: paused; }
   @keyframes marquee {
@@ -350,7 +327,6 @@
     flex-shrink: 0;
     box-shadow: 0 6px 24px rgba(0,0,0,0.5);
     transition: transform 0.3s;
-    transform: translateZ(0);
   }
   .finale-photo:hover { transform: scale(1.06); }
 
@@ -401,7 +377,6 @@
     align-items: center; justify-content: center;
     gap: 0;
     transition: opacity 0.8s ease, transform 0.8s ease;
-    will-change: opacity, transform;
   }
   #landing.fade-out {
     opacity: 0; transform: scale(1.05); pointer-events: none;
@@ -453,25 +428,23 @@
     position: absolute; border-radius: 50%;
     background: #fff;
     animation: twinkle var(--dur) ease-in-out infinite;
-    will-change: opacity, transform;
   }
   @keyframes twinkle {
-    0%,100% { opacity: var(--op); transform: scale(1) translateZ(0); }
-    50%      { opacity: calc(var(--op) * 0.2); transform: scale(0.6) translateZ(0); }
+    0%,100% { opacity: var(--op); transform: scale(1); }
+    50%      { opacity: calc(var(--op) * 0.2); transform: scale(0.6); }
   }
 
   /* ── POLAROID BACKGROUND ── */
   #polaroid-bg {
     position: fixed; inset: -20%; z-index: 0;
     pointer-events: none;
-    transform: rotate(-45deg) translateZ(0);
+    transform: rotate(-45deg);
     transform-origin: center center;
     display: flex;
     flex-direction: column;
     gap: 18px;
     opacity: 0;
     transition: opacity 1.2s ease;
-    will-change: opacity;
   }
   #polaroid-bg.visible { opacity: 1; }
 
@@ -480,8 +453,6 @@
     gap: 18px;
     flex-shrink: 0;
     width: max-content;
-    will-change: transform;
-    transform: translateZ(0);
   }
   /* odd rows: slide bottom-to-top (translateY negative) */
   .polaroid-row.row-up {
@@ -492,12 +463,12 @@
     animation: slideDown var(--spd, 32s) linear infinite;
   }
   @keyframes slideUp {
-    0%   { transform: translateX(0) translateZ(0); }
-    100% { transform: translateX(-50%) translateZ(0); }
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
   @keyframes slideDown {
-    0%   { transform: translateX(-50%) translateZ(0); }
-    100% { transform: translateX(0) translateZ(0); }
+    0%   { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
   }
 
   .polaroid-card {
@@ -507,15 +478,13 @@
     padding: 7px 7px 22px 7px;
     border-radius: 2px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.55);
-    transform: rotate(var(--tilt, 0deg)) translateZ(0);
+    transform: rotate(var(--tilt, 0deg));
     opacity: 0.22;
-    will-change: transform;
   }
   .polaroid-card img {
     width: 100%; height: 86px;
     object-fit: cover;
     display: block;
-    transform: translateZ(0);
   }
 
   svg { display: block; }
@@ -523,20 +492,26 @@
 </head>
 <body>
 
+<!-- Stars -->
 <div class="stars" id="stars"></div>
 
+<!-- Polaroid sliding background -->
 <div id="polaroid-bg"></div>
 
+<!-- Ambient BG -->
 <div id="ambient-bg"></div>
 
+<!-- Landing Screen -->
 <div id="landing">
   <h1 class="landing-title">Happy<br>Birthday.</h1>
   <p class="landing-sub">A little something for you</p>
   <button class="landing-btn" onclick="startExperience()">Open Your Gift ✦</button>
 </div>
 
+<!-- Main Stage -->
 <div id="stage">
 
+  <!-- ── SONG 1: Rakhlo Tum Chupaake ── -->
   <div class="song-screen" id="screen-0">
     <div class="player-shell">
       <div class="song-meta">
@@ -571,6 +546,7 @@
     </div>
   </div>
 
+  <!-- ── SONG 2: Moonlight ── -->
   <div class="song-screen" id="screen-1">
     <div class="player-shell">
       <div class="song-meta">
@@ -601,6 +577,7 @@
     </div>
   </div>
 
+  <!-- ── SONG 3: Careless Whisper ── -->
   <div class="song-screen" id="screen-2">
     <div class="player-shell">
       <div class="song-meta">
@@ -631,6 +608,7 @@
     </div>
   </div>
 
+  <!-- ── SONG 4: About You ── -->
   <div class="song-screen" id="screen-3">
     <div class="player-shell">
       <div class="song-meta">
@@ -661,6 +639,7 @@
     </div>
   </div>
 
+  <!-- ── SONG 5: Finale ── -->
   <div class="song-screen" id="screen-4">
     <div class="player-shell">
       <div class="song-meta">
@@ -672,8 +651,10 @@
         </div>
       </div>
 
+      <!-- Marquee photos -->
       <div class="finale-marquee-wrap" style="margin-bottom:18px;">
         <div class="finale-marquee" id="finale-marquee">
+          <!-- Duplicated for seamless loop — replace src with real photos -->
           <img class="finale-photo" src="images/mk19.jpeg" alt="">
           <img class="finale-photo" src="images/mk11.jpeg" alt="">
           <img class="finale-photo" src="images/mk7.jpeg" alt="">
@@ -681,6 +662,7 @@
           <img class="finale-photo" src="images/mk16.jpeg" alt="">
           <img class="finale-photo" src="images/mk12.jpeg" alt="">
           <img class="finale-photo" src="images/mk22.jpeg" alt="">
+          <!-- Duplicate set for seamless -->
           <img class="finale-photo" src="images/mk19.jpeg" alt="">
           <img class="finale-photo" src="images/mk11.jpeg" alt="">
           <img class="finale-photo" src="images/mk7.jpeg" alt="">
@@ -691,6 +673,7 @@
         </div>
       </div>
 
+      <!-- Poem -->
       <div class="poem-block">
         <div class="poem-label">Things Untold</div>
         <div class="poem-stanza">
@@ -721,7 +704,9 @@
     </div>
   </div>
 
-</div><div id="toast"></div>
+</div><!-- end stage -->
+
+<div id="toast"></div>
 
 <script>
 // ─────────────────────────────────────────
@@ -744,43 +729,43 @@ const SONGS = [
         img: 'images/mk10.jpeg',
         // CHORUS — line 1+2 (0:27 of original = 0s, vocals at ~6s)
         words: ['Rakh', 'lo', 'tum', 'chhupa', 'ke', 'phir,'],
-        times: [6.0, 6.5, 7.0, 7.5, 8.0, 8.4],
+        times: [6.0, 6.5, 7.0, 7.5, 7.7, 8.0],
       },
       {
         img: 'images/mk7.jpeg',
         // CHORUS — line 2
         words: ['Khat', 'likh', 'ke', 'hi', 'kehna,'],
-        times: [9.5, 10.0, 10.5, 11.0, 11.5],
+        times: [9.6, 10.0, 10.5, 10.9, 11.3],
       },
       {
         img: 'images/mk1.jpeg',
         // CHORUS — line 3
         words: ['Simti', 'si', 'likhaai', 'mein', 'hi', 'bharna', 'apna', 'gham'],
-        times: [13.5, 14.0, 15.0, 15.4, 15.8, 16.1, 16.5, 17.9],
+        times: [13.5, 14.0, 15.0, 15.4, 15.8, 16.1, 16.5, 17.5],
       },
       {
         img: 'images/mk14.jpeg',
         // POST-CHORUS — "rakhti ho chhupa ke, bator lo kahin pe jod do"
         words: ['Rakhti', 'ho', 'chhupa', 'ke,', 'bator', 'lo', 'kahin', 'pe', 'jod', 'do'],
-        times: [20.0, 20.5, 21.0, 21.5, 22.5, 23.0, 23.5, 24.3, 25.7, 26.3],
+        times: [20.0, 20.5, 21.0, 21.5, 22.5, 23.0, 23.5, 24.3, 25.3, 26.0],
       },
       {
         img: 'images/mk12.jpeg',
         // POST-CHORUS — "lifafe mein saja ke humein aisi yun saza do"
         words: ['Lifafe', 'mein', 'saja', 'ke,', 'humein', 'aisi', 'yun', 'saza', 'do'],
-        times: [27.4, 27.9, 28.4, 28.8, 30.3, 30.8, 31.8, 32.4, 33.0],
+        times: [27.4, 27.9, 28.4, 28.8, 30.3, 30.8, 31.8, 32.2, 32.9],
       },
       {
         img: 'images/mk8.jpeg',
         // POST-CHORUS — "ki hum padh ke jaan galti, aur galti kal se na ho"
         words: ['Ki', 'hum', 'padh', 'ke', 'jaane', 'galti,', 'aur', 'galti', 'kal', 'se', 'na', 'ho'],
-        times: [34.0, 34.4, 35.3, 35.6, 35.8, 36.1, 37.4, 38.5, 38.9, 39.3, 40.7, 41.1],
+        times: [34.0, 34.4, 35.3, 35.6, 35.8, 36.1, 37.4, 38.5, 38.9, 39.3, 40.4, 40.9],
       },
       {
         img: 'images/mk11.jpeg',
         // POST-CHORUS — "humein aisi ek saza do ki hum jaanen saari doori"
         words: ['Humein', 'aisi', 'ek', 'saza', 'do,', 'ki', 'hum', 'jaanen', 'saari', 'doori'],
-        times: [43.2, 43.7, 44.6, 45.1, 45.6, 46.1, 46.6, 47.1, 47.6, 48.1],
+        times: [43.2, 43.7, 44.6, 45.1, 45.6, 46.1, 46.6, 47.1, 47.4, 47.9],
       },
       {
         img: 'images/mk21.jpeg',
@@ -792,19 +777,19 @@ const SONGS = [
         img: 'images/mk18.jpeg',
         // VERSE — "tum likh lo jaise kathghare mein, hum khat padh lenge shauk se"
         words: ['Tum', 'likh', 'lo', 'jaise', 'kathghare', 'mein,', 'hum', 'khat', 'padh', 'lenge', 'shauk', 'se'],
-        times: [56.1, 56.7, 57.3, 57.8, 58.4, 59.0, 59.8, 60.3, 61.4, 62.3, 63.1, 63.4],
+        times: [56.3, 56.7, 57.3, 57.8, 58.4, 59.0, 59.8, 60.3, 61.4, 62.3, 62.8, 63.0],
       },
       {
         img: 'images/mk5.jpeg',
         // VERSE — "isi ek pal ke bahaane, phir hum galti se paas aayenge"
         words: ['Isi', 'ek', 'pal', 'ke', 'bahaane,', 'phir', 'hum', 'galti', 'se', 'paas', 'aayenge'],
-        times: [64.3, 64.8, 65.3, 65.8, 66.3, 67.8, 68.3, 68.8, 69.3, 69.8, 70.0],
+        times: [64.5, 64.8, 65.3, 65.8, 66.3, 67.8, 68.3, 68.8, 69.3, 69.8, 70.0],
       },
       {
         img: 'images/mk16.jpeg',
         // VERSE OUTRO — "teri kehne ki thi galti, aur uska kya hi kehna"
         words: ['Teri', 'kehne', 'ki', 'thi', 'galti,', 'aur', 'uska', 'kya', 'hi', 'kehna'],
-        times: [71.2, 71.5, 71.8, 72.1, 72.4, 72.7, 74.2, 76.8, 77.2, 77.6],
+        times: [71.4, 71.5, 71.8, 72.1, 72.4, 72.7, 74.2, 76.8, 77.2, 77.6],
       },
     ]
   },
@@ -968,12 +953,10 @@ let currentFrameIdx = -1;
 let usedAudioContext = false;
 const ambientBg = document.getElementById('ambient-bg');
 
-// ── Stars (Optimized for mobile)
+// ── Stars
 (function spawnStars() {
   const container = document.getElementById('stars');
-  // Reduce star count on smaller screens to save memory
-  const starCount = window.innerWidth < 700 ? 25 : 60; 
-  for (let i = 0; i < starCount; i++) {
+  for (let i = 0; i < 60; i++) {
     const s = document.createElement('div');
     s.className = 'star';
     const size = Math.random() * 2 + 0.5;
@@ -1111,7 +1094,7 @@ function restartExperience() {
   // Reset progress
   for (let i = 0; i < 5; i++) {
     const pf = document.getElementById(`prog-${i}`);
-    if (pf) pf.style.transform = 'scaleX(0)'; // Updated for scaleX
+    if (pf) pf.style.width = '0%';
     const ti = document.getElementById(`time-${i}`);
     if (ti) ti.textContent = '0:00';
     const disc = document.getElementById(`disc-${i}`);
@@ -1299,7 +1282,7 @@ function clearAllTimers() {
   frameTimers = []; wordTimers = [];
 }
 
-// ── Progress bar (Optimized for scaleX)
+// ── Progress bar
 function startProgressLoop(idx) {
   if (progressRaf) cancelAnimationFrame(progressRaf);
   const song = SONGS[idx];
@@ -1311,7 +1294,7 @@ function startProgressLoop(idx) {
     const elapsed = audioStart + (performance.now() - startWall) / 1000;
     const pct = Math.min(100, (elapsed / song.duration) * 100);
     const pf = document.getElementById(`prog-${idx}`);
-    if (pf) pf.style.transform = `scaleX(${pct / 100})`; // Used scaleX here
+    if (pf) pf.style.width = pct + '%';
     const ti = document.getElementById(`time-${idx}`);
     if (ti) ti.textContent = formatTime(elapsed);
 
@@ -1332,7 +1315,7 @@ function startFinaleProgress() {
     const elapsed = audio ? audio.currentTime : 0;
     const pct = Math.min(100, (elapsed / totalDur) * 100);
     const pf = document.getElementById('prog-4');
-    if (pf) pf.style.transform = `scaleX(${pct / 100})`; // Used scaleX here
+    if (pf) pf.style.width = pct + '%';
     const ti = document.getElementById('time-4');
     if (ti) ti.textContent = formatTime(elapsed);
     progressRaf = requestAnimationFrame(tick);
