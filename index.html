@@ -811,13 +811,13 @@ const SONGS = [
         img: 'images/mk14.jpeg',
         // "Goriyan baahan de paye jaal sohniye"
         words: ['Goriyan', 'baahan', 'de', 'paye', 'jaal', 'sohniye'],
-        times: [4.3, 4.9, 5.4, 5.9, 6.4, 6.6],
+        times: [4.3, 4.9, 5.4, 5.9, 6.2, 6.3],
       },
       {
         img: 'images/mk27.jpeg',
         // "Tu sangdi rahve main hath fadla" — actually sung at ~13.5s (not 9.5s)
         words: ['Tu', 'sangdi', 'rahve', 'main', 'hath', 'fadla'],
-        times: [7.8, 8.3, 8.7, 9.2, 10.2, 10.4],
+        times: [7.8, 8.3, 8.7, 9.2, 9.7, 10.1],
       },
       {
         img: 'images/mk19.jpeg',
@@ -846,25 +846,25 @@ const SONGS = [
         img: 'images/mk12.jpeg',
         // "Tonight the music seems so loud" — vocals at ~5s
         words: ['Tonight,', 'the', 'music', 'seems', 'so', 'loud...'],
-        times: [5.0, 5.5, 6.0, 6.5, 7.0, 7.5],
+        times: [5.0, 5.5, 6.0, 6.5, 6.9, 7.2],
       },
       {
         img: 'images/mk7.jpeg',
         // "I wish that we could lose this crowd"
         words: ['I', 'wish', 'that', 'we', 'could', 'lose', 'this', 'crowd'],
-        times: [8.2, 8.7, 9.2, 9.7, 10.0, 10.3, 10.7, 11.1],
+        times: [8.2, 8.7, 9.2, 9.7, 10.0, 10.3, 10.5, 10.7],
       },
       {
         img: 'images/mk11.jpeg',
         // "Maybe it's better this way"
         words: ['Maybe', 'it\'s', 'better', 'this', 'way...'],
-        times: [11.7, 12.3, 12.9, 13.5, 13.7],
+        times: [11.7, 12.3, 12.9, 13.5, 13.6],
       },
       {
         img: 'images/mk16.jpeg',
         // "We could have been so good together"
         words: ['We', 'hurt', 'each other', 'with', 'the', 'things', 'we', 'want', 'to', 'say'],
-        times: [14.8, 15.2, 15.6, 15.8, 15.9, 16.2, 16.4, 16.6, 16.8, 17.0],
+        times: [14.9, 15.2, 15.6, 15.8, 15.9, 16.2, 16.4, 16.6, 16.8, 16.9],
       },
       {
         img: 'images/mk1.jpeg',
@@ -876,13 +876,13 @@ const SONGS = [
         img: 'images/mk9.jpeg',
         // "I\'ll never dance again, guilty feet have got no rhythm"
         words: ['We', 'could', 'have', 'lived,', 'this', 'dance', 'forever'],
-        times: [20.9, 21.3, 21.8, 22.3, 22.8, 23.3, 23.8],
+        times: [21.2, 21.3, 21.8, 22.3, 22.8, 23.3, 23.5],
       },
       {
         img: 'images/mk3.jpeg',
         // "I\'ll never dance again, guilty feet have got no rhythm"
         words: ['But', 'now', 'who\'s', 'gonna,', 'dance', 'with', 'me', '?'],
-        times: [24.5, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0],
+        times: [24.8, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 27.8],
       },
       {
         img: 'images/mk21.jpeg',
@@ -982,12 +982,12 @@ const ambientBg = document.getElementById('ambient-bg');
   SONGS.forEach(song => song.frames && song.frames.forEach(f => allImgs.push(f.img)));
   // Also add finale marquee images
   const finaleImgs = [
-    'https://picsum.photos/seed/a1/220/220',
-    'https://picsum.photos/seed/a2/220/220',
-    'https://picsum.photos/seed/a3/220/220',
-    'https://picsum.photos/seed/a4/220/220',
-    'https://picsum.photos/seed/a5/220/220',
-    'https://picsum.photos/seed/a6/220/220',
+    'images/mk19.jpeg',
+    'images/mk12.jpeg',
+    'images/mk21.jpeg',
+    'images/mk7.jpeg',
+    'images/mk16.jpeg',
+    'images/mk22.jpeg',
   ];
   const imgPool = [...allImgs, ...finaleImgs];
 
